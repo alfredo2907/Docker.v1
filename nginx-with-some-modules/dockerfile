@@ -1,0 +1,35 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    libpcre3 \
+    libpcre3-dev \
+    zlib1g \
+    zlib1g-dev \
+    libssl-dev \
+    wget \
+    git
+
+ENV NGINX_VERSION 1.26.1
+#ENV VTS_MODULE_VERSION 0.1.18
+
+RUN wget http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
+    tar -zxvf nginx-${NGINX_VERSION}.tar.gz
+
+RUN git clone https://github.com/vozlt/nginx-module-vts.git
+
+WORKDIR /nginx-${NGINX_VERSION}
+RUN ./configure --with-compat --add-module=../nginx-module-vts && \
+    make && \
+    make install
+
+WORKDIR /
+RUN rm -rf /nginx-${NGINX_VERSION} /nginx-${NGINX_VERSION}.tar.gz /nginx-module-vts
+
+COPY nginx.conf /usr/local/nginx/conf/nginx.conf
+COPY project/index.html /var/www/html/index.html
+
+EXPOSE 80
+
+CMD ["/usr/local/nginx/sbin/nginx", "-g", "daemon off;"]
